@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Google Tasks Client (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Google Tasks Client (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

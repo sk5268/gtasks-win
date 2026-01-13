@@ -1,0 +1,68 @@
+# Google Tasks Secrets
+client_secrets.json
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]-x64/
+[Ww][Ii][Nn]-x86/
+[Ww][Ii][Nn]-arm64/
+arm/
+arm64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015/2017/2019/2022 cache and settings folder
+.vs/
+
+# MSTest test results
+TestResults/
+[Bb]uild[Cc]ontext/
+
+# Output of the build process
+[Aa]pp[Pp]ackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.dotest
+
+# Others
+*.cache
+*.bak
+*.lib
+*.pdb
+*.exp
+*.ilk
+*.aps
+*.ncb
+*.opendb
+*.sdf
+*.cachefile
+*.nosync
+*.tmp
+*.log
+
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+# Uncomment if using NuGet Local Cache
+#  clisettings.json
