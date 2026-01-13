@@ -30,6 +30,7 @@ namespace Google_Tasks_Client
         {
             this.InitializeComponent();
             ViewModel = new MainViewModel();
+            RootGrid.DataContext = ViewModel;
         }
     }
 }

@@ -65,6 +65,29 @@ namespace Google_Tasks_Client.Services
             }).ToList();
         }
 
+        public async Task<TaskListItem> AddTaskListAsync(string title)
+        {
+            await EnsureInitializedAsync();
+            var taskList = new Google.Apis.Tasks.v1.Data.TaskList { Title = title };
+            var result = await _service!.Tasklists.Insert(taskList).ExecuteAsync();
+            
+            DateTime? updated = null;
+            if (DateTime.TryParse(result.Updated, out var dt)) updated = dt;
+
+            return new TaskListItem
+            {
+                Id = result.Id,
+                Title = result.Title,
+                Updated = updated
+            };
+        }
+
+        public async System.Threading.Tasks.Task DeleteTaskListAsync(string taskListId)
+        {
+            await EnsureInitializedAsync();
+            await _service!.Tasklists.Delete(taskListId).ExecuteAsync();
+        }
+
         public async System.Threading.Tasks.Task<List<TaskItem>> GetTasksAsync(string taskListId)
         {
             await EnsureInitializedAsync();
@@ -86,6 +109,67 @@ namespace Google_Tasks_Client.Services
                     Due = due
                 };
             }).ToList();
+        }
+
+        public async Task<TaskItem> AddTaskAsync(string taskListId, TaskItem task)
+        {
+            await EnsureInitializedAsync();
+            var googleTask = new Google.Apis.Tasks.v1.Data.Task
+            {
+                Title = task.Title,
+                Notes = task.Notes,
+                Status = task.Status
+                // Due date formatting requires specific RFC 3339 timestamp if used
+            };
+
+            var request = _service!.Tasks.Insert(googleTask, taskListId);
+            var item = await request.ExecuteAsync();
+
+            DateTime? due = null;
+            if (DateTime.TryParse(item.Due, out var dt)) due = dt;
+
+            return new TaskItem
+            {
+                Id = item.Id,
+                Title = item.Title,
+                Notes = item.Notes,
+                Status = item.Status,
+                Due = due
+            };
+        }
+
+        public async Task<TaskItem> UpdateTaskAsync(string taskListId, TaskItem task)
+        {
+            await EnsureInitializedAsync();
+            var googleTask = new Google.Apis.Tasks.v1.Data.Task
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Notes = task.Notes,
+                Status = task.Status
+            };
+
+            var request = _service!.Tasks.Update(googleTask, taskListId, task.Id);
+            var item = await request.ExecuteAsync();
+
+            DateTime? due = null;
+            if (DateTime.TryParse(item.Due, out var dt)) due = dt;
+
+            return new TaskItem
+            {
+                Id = item.Id,
+                Title = item.Title,
+                Notes = item.Notes,
+                Status = item.Status,
+                Due = due
+            };
+        }
+
+        public async System.Threading.Tasks.Task DeleteTaskAsync(string taskListId, string taskId)
+        {
+            await EnsureInitializedAsync();
+            var request = _service!.Tasks.Delete(taskListId, taskId);
+            await request.ExecuteAsync();
         }
     }
 }

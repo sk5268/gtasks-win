@@ -11,7 +11,7 @@
     mc:Ignorable="d"
     Title="Google Tasks Client">
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300" />
             <ColumnDefinition Width="*" />
@@ -21,19 +21,41 @@
         <Grid Grid.Column="0" Background="{ThemeResource SystemControlPageBackgroundChromeLowBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             
             <TextBlock Text="Task Lists" Style="{StaticResource TitleTextBlockStyle}" Margin="16,24,16,12"/>
+
+            <!-- Add Task List Section -->
+            <Grid Grid.Row="1" Margin="16,0,16,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{x:Bind ViewModel.NewTaskListTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         PlaceholderText="New list" />
+                <Button Grid.Column="1" Content="+" Command="{x:Bind ViewModel.AddTaskListCommand}" Margin="4,0,0,0"/>
+            </Grid>
             
             <ListView x:Name="TaskListsView" 
                       ItemsSource="{x:Bind ViewModel.TaskLists, Mode=OneWay}"
                       SelectedItem="{x:Bind ViewModel.SelectedTaskList, Mode=TwoWay}"
-                      Grid.Row="1"
+                      Grid.Row="2"
                       SelectionMode="Single">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:TaskListItem">
-                        <TextBlock Text="{x:Bind Title}" Margin="0,8"/>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind Title}" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" 
+                                    Command="{Binding DataContext.DeleteTaskListCommand, ElementName=RootGrid}"
+                                    CommandParameter="{x:Bind}"
+                                    Background="Transparent" BorderThickness="0" />
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
@@ -42,6 +64,7 @@
         <!-- Main Content: Tasks -->
         <Grid Grid.Column="1" Padding="24">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
@@ -55,9 +78,20 @@
                               Margin="12,0,0,0"/>
             </StackPanel>
 
+            <!-- Add Task Section -->
+            <Grid Grid.Row="1" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         PlaceholderText="Add a task" />
+                <Button Grid.Column="1" Content="Add" Command="{x:Bind ViewModel.AddTaskCommand}" Margin="8,0,0,0"/>
+            </Grid>
+
             <ListView x:Name="TasksView" 
                       ItemsSource="{x:Bind ViewModel.Tasks, Mode=OneWay}"
-                      Grid.Row="1"
+                      Grid.Row="2"
                       SelectionMode="None">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:TaskItem">
@@ -65,9 +99,13 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             
-                            <CheckBox IsChecked="{x:Bind IsCompleted, Mode=OneWay}" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                            <CheckBox IsChecked="{x:Bind IsCompleted, Mode=TwoWay}" 
+                                      Command="{Binding DataContext.ToggleTaskStatusCommand, ElementName=RootGrid}"
+                                      CommandParameter="{x:Bind}"
+                                      Margin="0,0,12,0" VerticalAlignment="Top"/>
                             
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}"/>
@@ -76,6 +114,11 @@
                                 <TextBlock Text="{x:Bind Due}" Style="{StaticResource CaptionTextBlockStyle}" 
                                            Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
                             </StackPanel>
+                            
+                            <Button Grid.Column="2" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" 
+                                    Command="{Binding DataContext.DeleteTaskCommand, ElementName=RootGrid}"
+                                    CommandParameter="{x:Bind}"
+                                    Background="Transparent" BorderThickness="0"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
