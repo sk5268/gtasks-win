@@ -26,11 +26,38 @@ namespace Google_Tasks_Client
     {
         public MainViewModel ViewModel { get; }
 
-        public MainWindow()
-        {
-            this.InitializeComponent();
-            ViewModel = new MainViewModel();
-            RootGrid.DataContext = ViewModel;
+                public MainWindow()
+
+                {
+
+                    this.InitializeComponent();
+
+                    ViewModel = new MainViewModel();
+
+                    RootGrid.DataContext = ViewModel;
+
+                    this.Closed += MainWindow_Closed;
+
+                }
+
+        
+
+                private async void MainWindow_Closed(object sender, WindowEventArgs args)
+
+                {
+
+                    // Note: In WinUI 3, this might be synchronous or fire after window is gone,
+
+                    // but we call our async shutdown. 
+
+                    // For a production app, we might use a deferral if available or a task wait.
+
+                    await ViewModel.ShutdownAsync();
+
+                }
+
+            }
+
         }
-    }
-}
+
+        

@@ -73,9 +73,6 @@
                 <TextBlock Text="{Binding ViewModel.SelectedTaskList.Title}" 
                            Style="{StaticResource TitleTextBlockStyle}" 
                            VerticalAlignment="Center"/>
-                <ProgressRing IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" 
-                              Visibility="{x:Bind ViewModel.IsLoadingVisibility, Mode=OneWay}"
-                              Margin="12,0,0,0"/>
             </StackPanel>
 
             <!-- Add Task Section -->
@@ -111,7 +108,7 @@
                                 <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}"/>
                                 <TextBlock Text="{x:Bind Notes}" Style="{StaticResource CaptionTextBlockStyle}" 
                                            Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
-                                <TextBlock Text="{x:Bind Due}" Style="{StaticResource CaptionTextBlockStyle}" 
+                                <TextBlock Text="{x:Bind FormattedDue}" Style="{StaticResource CaptionTextBlockStyle}" 
                                            Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
                             </StackPanel>
                             

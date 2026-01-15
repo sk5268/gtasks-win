@@ -6,6 +6,9 @@ namespace Google_Tasks_Client.Services
 {
     public interface ITaskService
     {
+        Task InitializeAsync();
+        Task PersistAsync();
+        
         Task<List<TaskListItem>> GetTaskListsAsync();
         Task<List<TaskItem>> GetTasksAsync(string taskListId);
         Task<TaskListItem> AddTaskListAsync(string title);
@@ -13,5 +16,9 @@ namespace Google_Tasks_Client.Services
         Task<TaskItem> AddTaskAsync(string taskListId, TaskItem task);
         Task<TaskItem> UpdateTaskAsync(string taskListId, TaskItem task);
         Task DeleteTaskAsync(string taskListId, string taskId);
+        
+        Task SyncTaskListsAsync();
+        Task SyncTasksAsync(string taskListId);
+        Task SyncAllAsync();
     }
 }

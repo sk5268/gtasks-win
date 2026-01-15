@@ -6,7 +6,10 @@ using Google_Tasks_Client.Models;
 using Google_Tasks_Client.Services;
 using Google_Tasks_Client.Helpers;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Dispatching;
 using System.Windows.Input;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Google_Tasks_Client.ViewModels
 {
@@ -14,9 +17,9 @@ namespace Google_Tasks_Client.ViewModels
     {
         private readonly ITaskService _taskService;
         private TaskListItem? _selectedTaskList;
-        private bool _isLoading;
         private string _newTaskTitle = string.Empty;
         private string _newTaskListTitle = string.Empty;
+        private readonly DispatcherQueue _dispatcherQueue;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -78,28 +81,12 @@ namespace Google_Tasks_Client.ViewModels
             }
         }
 
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set
-            {
-                if (_isLoading != value)
-                {
-                    _isLoading = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(IsLoadingVisibility));
-                }
-            }
-        }
-
-        public Visibility IsLoadingVisibility => IsLoading ? Visibility.Visible : Visibility.Collapsed;
-
         private readonly DispatcherTimer _pollTimer;
 
         public MainViewModel()
         {
-            // Now using the real Google API service
-            _taskService = new GoogleTaskService();
+            _taskService = new TaskRepository();
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             
             AddTaskCommand = new RelayCommand(async _ => await AddTaskAsync(), _ => !string.IsNullOrWhiteSpace(NewTaskTitle));
             DeleteTaskCommand = new RelayCommand(async param => await DeleteTaskAsync(param as TaskItem));
@@ -108,185 +95,171 @@ namespace Google_Tasks_Client.ViewModels
             AddTaskListCommand = new RelayCommand(async _ => await AddTaskListAsync(), _ => !string.IsNullOrWhiteSpace(NewTaskListTitle));
             DeleteTaskListCommand = new RelayCommand(async param => await DeleteTaskListAsync(param as TaskListItem));
 
-            _ = LoadTaskListsAsync();
+            // Initial immediate load and background sync
+            _ = InitialLoadAsync();
 
             // Setup polling timer (10 seconds)
             _pollTimer = new DispatcherTimer();
             _pollTimer.Interval = System.TimeSpan.FromSeconds(10);
-            _pollTimer.Tick += async (s, e) => await RefreshAsync();
+            _pollTimer.Tick += async (s, e) => await RefreshActiveListAsync();
             _pollTimer.Start();
         }
 
-        private async Task RefreshAsync()
+        private async Task InitialLoadAsync()
         {
-            if (IsLoading) return;
+            // 1. Load from DB (into Repository memory)
+            await _taskService.InitializeAsync();
+            
+            // 2. Refresh UI from local cache
+            await LoadTaskListsUIAsync();
 
-            // Silently refresh in the background
+            // 3. One-time boot sync from API (Everything)
+            await Task.Run(async () => {
+                await _taskService.SyncAllAsync();
+                
+                // 4. Update UI as soon as response arrives
+                _dispatcherQueue.TryEnqueue(async () => {
+                    await LoadTaskListsUIAsync();
+                    if (SelectedTaskList != null)
+                    {
+                        await LoadTasksUIAsync(SelectedTaskList.Id);
+                    }
+                });
+            });
+        }
+
+        private async Task RefreshActiveListAsync()
+        {
+            if (SelectedTaskList == null) return;
+            
             try
             {
-                var lists = await _taskService.GetTaskListsAsync();
-                
-                // Update TaskLists collection without clearing everything to avoid UI flicker
-                // Simple sync: if count or IDs differ, just reload.
-                if (lists.Count != TaskLists.Count)
-                {
-                    TaskLists.Clear();
-                    foreach (var list in lists) TaskLists.Add(list);
-                }
-
-                if (SelectedTaskList != null)
-                {
-                    var tasks = await _taskService.GetTasksAsync(SelectedTaskList.Id);
-                    // Simple sync for tasks
-                    if (tasks.Count != Tasks.Count)
-                    {
-                        Tasks.Clear();
-                        foreach (var t in tasks) Tasks.Add(t);
-                    }
-                }
+                await _taskService.SyncTasksAsync(SelectedTaskList.Id);
+                var tasks = await _taskService.GetTasksAsync(SelectedTaskList.Id);
+                SyncTasksCollection(tasks);
             }
-            catch
+            catch { }
+        }
+
+        private void SyncTaskListsCollection(List<TaskListItem> newList)
+        {
+            for (int i = TaskLists.Count - 1; i >= 0; i--)
             {
-                // Ignore background refresh errors to avoid interrupting the user
+                if (!newList.Any(l => l.Id == TaskLists[i].Id)) TaskLists.RemoveAt(i);
+            }
+
+            foreach (var item in newList)
+            {
+                var existing = TaskLists.FirstOrDefault(l => l.Id == item.Id);
+                if (existing == null) TaskLists.Add(item);
+                else existing.Title = item.Title;
+            }
+
+            if (SelectedTaskList == null && TaskLists.Count > 0)
+            {
+                SelectedTaskList = TaskLists[0];
+            }
+        }
+
+        private void SyncTasksCollection(List<TaskItem> newList)
+        {
+            for (int i = Tasks.Count - 1; i >= 0; i--)
+            {
+                if (!newList.Any(t => t.Id == Tasks[i].Id)) Tasks.RemoveAt(i);
+            }
+
+            foreach (var item in newList)
+            {
+                var existing = Tasks.FirstOrDefault(t => t.Id == item.Id);
+                if (existing == null) Tasks.Add(item);
+                else
+                {
+                    existing.Title = item.Title;
+                    existing.Notes = item.Notes;
+                    existing.Status = item.Status;
+                    existing.Due = item.Due;
+                }
             }
         }
 
         private async Task AddTaskListAsync()
         {
             if (string.IsNullOrWhiteSpace(NewTaskListTitle)) return;
-
-            IsLoading = true;
-            try
-            {
-                var createdList = await _taskService.AddTaskListAsync(NewTaskListTitle);
-                TaskLists.Add(createdList);
-                SelectedTaskList = createdList;
-                NewTaskListTitle = string.Empty;
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            var title = NewTaskListTitle;
+            NewTaskListTitle = string.Empty;
+            var createdList = await _taskService.AddTaskListAsync(title);
+            TaskLists.Add(createdList);
+            SelectedTaskList = createdList;
         }
 
         private async Task DeleteTaskListAsync(TaskListItem? list)
         {
             if (list == null) return;
-
-            IsLoading = true;
-            try
+            await _taskService.DeleteTaskListAsync(list.Id);
+            TaskLists.Remove(list);
+            if (SelectedTaskList == list)
             {
-                await _taskService.DeleteTaskListAsync(list.Id);
-                TaskLists.Remove(list);
-                if (SelectedTaskList == list)
-                {
-                    SelectedTaskList = TaskLists.Count > 0 ? TaskLists[0] : null;
-                }
-            }
-            finally
-            {
-                IsLoading = false;
+                SelectedTaskList = TaskLists.Count > 0 ? TaskLists[0] : null;
             }
         }
 
         private async Task AddTaskAsync()
         {
             if (SelectedTaskList == null || string.IsNullOrWhiteSpace(NewTaskTitle)) return;
+            var titleInput = NewTaskTitle;
+            NewTaskTitle = string.Empty;
 
-            IsLoading = true;
-            try
-            {
-                var newTask = new TaskItem { Title = NewTaskTitle };
-                var createdTask = await _taskService.AddTaskAsync(SelectedTaskList.Id, newTask);
-                Tasks.Insert(0, createdTask);
-                NewTaskTitle = string.Empty;
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            var (title, due) = ReminderParser.Parse(titleInput);
+            var newTask = new TaskItem { Title = title, Due = due };
+            
+            // UI already optimistic because we add it here
+            Tasks.Insert(0, newTask);
+            await _taskService.AddTaskAsync(SelectedTaskList.Id, newTask);
         }
 
         private async Task DeleteTaskAsync(TaskItem? task)
         {
-            if (SelectedTaskList == null || task == null) return;
-
-            IsLoading = true;
-            try
-            {
-                await _taskService.DeleteTaskAsync(SelectedTaskList.Id, task.Id);
-                Tasks.Remove(task);
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            if (task == null || SelectedTaskList == null) return;
+            await _taskService.DeleteTaskAsync(SelectedTaskList.Id, task.Id);
+            Tasks.Remove(task);
         }
 
         private async Task ToggleTaskStatusAsync(TaskItem? task)
         {
-            if (SelectedTaskList == null || task == null) return;
-
-            // Note: The Property Setter already updated the local Status via UI binding (if TwoWay)
-            // But we should ensure consistency or handling if binding didn't update it yet.
-            // With Command on CheckBox, the Command fires after the Click, and the Binding usually updates.
-            // However, to be safe, let's assume the UI state 'IsCompleted' is the desired state.
-            
-            // Wait, if we rely on TwoWay binding, the 'Status' is already updated in the object.
-            // We just need to send the update to the server.
-            
-            IsLoading = true;
-            try
-            {
-               var updatedTask = await _taskService.UpdateTaskAsync(SelectedTaskList.Id, task);
-               // Optional: Update local object with server response if needed (e.g. ETag, updated timestamp)
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            if (task == null || SelectedTaskList == null) return;
+            await _taskService.UpdateTaskAsync(SelectedTaskList.Id, task);
         }
 
-        public async Task LoadTaskListsAsync()
+        public async Task LoadTaskListsUIAsync()
         {
-            IsLoading = true;
-            try
-            {
-                var lists = await _taskService.GetTaskListsAsync();
-                TaskLists.Clear();
-                foreach (var list in lists)
-                {
-                    TaskLists.Add(list);
-                }
+            var lists = await _taskService.GetTaskListsAsync();
+            SyncTaskListsCollection(lists);
+        }
 
-                // Select first list by default
-                if (TaskLists.Count > 0)
-                {
-                    SelectedTaskList = TaskLists[0];
-                }
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+        public async Task LoadTasksUIAsync(string listId)
+        {
+            var tasks = await _taskService.GetTasksAsync(listId);
+            SyncTasksCollection(tasks);
         }
 
         public async Task LoadTasksAsync(string listId)
         {
-            IsLoading = true;
-            try
-            {
-                var tasks = await _taskService.GetTasksAsync(listId);
-                Tasks.Clear();
-                foreach (var task in tasks)
-                {
-                    Tasks.Add(task);
-                }
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            // 1. Show cached tasks immediately
+            await LoadTasksUIAsync(listId);
+
+            // 2. Fetch changes for THIS list in background
+            _ = Task.Run(async () => {
+                try {
+                    await _taskService.SyncTasksAsync(listId);
+                    var updated = await _taskService.GetTasksAsync(listId);
+                    _dispatcherQueue.TryEnqueue(() => SyncTasksCollection(updated));
+                } catch { }
+            });
+        }
+
+        public async Task ShutdownAsync()
+        {
+            await _taskService.PersistAsync();
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

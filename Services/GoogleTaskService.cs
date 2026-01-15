@@ -92,6 +92,8 @@ namespace Google_Tasks_Client.Services
         {
             await EnsureInitializedAsync();
             var request = _service!.Tasks.List(taskListId);
+            request.ShowCompleted = true;
+            request.MaxResults = 100;
             var result = await request.ExecuteAsync();
 
             if (result.Items == null) return new List<TaskItem>();
@@ -103,9 +105,9 @@ namespace Google_Tasks_Client.Services
                 return new TaskItem
                 {
                     Id = item.Id,
-                    Title = item.Title,
-                    Notes = item.Notes,
-                    Status = item.Status,
+                    Title = item.Title ?? "",
+                    Notes = item.Notes ?? "",
+                    Status = item.Status ?? "needsAction",
                     Due = due
                 };
             }).ToList();
@@ -118,8 +120,8 @@ namespace Google_Tasks_Client.Services
             {
                 Title = task.Title,
                 Notes = task.Notes,
-                Status = task.Status
-                // Due date formatting requires specific RFC 3339 timestamp if used
+                Status = task.Status,
+                Due = task.Due?.ToString("yyyy-MM-ddTHH:mm:ss.fffK")
             };
 
             var request = _service!.Tasks.Insert(googleTask, taskListId);
@@ -146,7 +148,8 @@ namespace Google_Tasks_Client.Services
                 Id = task.Id,
                 Title = task.Title,
                 Notes = task.Notes,
-                Status = task.Status
+                Status = task.Status,
+                Due = task.Due?.ToString("yyyy-MM-ddTHH:mm:ss.fffK")
             };
 
             var request = _service!.Tasks.Update(googleTask, taskListId, task.Id);
@@ -171,5 +174,11 @@ namespace Google_Tasks_Client.Services
             var request = _service!.Tasks.Delete(taskListId, taskId);
             await request.ExecuteAsync();
         }
+
+        public System.Threading.Tasks.Task SyncTaskListsAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task SyncTasksAsync(string taskListId) => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task SyncAllAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task InitializeAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task PersistAsync() => System.Threading.Tasks.Task.CompletedTask;
     }
 }
