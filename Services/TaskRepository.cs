@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Google_Tasks_Client.Models;
 using System.Linq;
+using System.Diagnostics;
 
 namespace Google_Tasks_Client.Services
 {
@@ -74,7 +75,9 @@ namespace Google_Tasks_Client.Services
                         _tasksByList.Remove(tempId);
                         _tasksByList[remote.Id] = tasks;
                     }
-                } catch { }
+                } catch (Exception ex) {
+                    Debug.WriteLine($"Error adding task list: {ex.Message}");
+                }
             });
 
             return newList;
@@ -96,7 +99,6 @@ namespace Google_Tasks_Client.Services
         public async Task<TaskItem> AddTaskAsync(string taskListId, TaskItem task)
         {
             var tempId = "temp_" + Guid.NewGuid().ToString();
-            var originalId = task.Id;
             task.Id = tempId;
 
             if (!_tasksByList.ContainsKey(taskListId)) _tasksByList[taskListId] = new List<TaskItem>();
@@ -104,9 +106,27 @@ namespace Google_Tasks_Client.Services
 
             _ = Task.Run(async () => {
                 try {
-                    var remote = await _remoteService.AddTaskAsync(taskListId, task);
+                    string actualListId = taskListId;
+                    if (taskListId.StartsWith("temp_"))
+                    {
+                        // Wait or lookup the real ID if it's being updated
+                        var list = _taskLists.FirstOrDefault(l => l.Title == ( _taskLists.FirstOrDefault(x => x.Id == taskListId)?.Title ) && !l.Id.StartsWith("temp_"));
+                        if (list != null) actualListId = list.Id;
+                        else {
+                             // If still temp, we can't add to remote yet. 
+                             // For now, let's just wait a bit or let it fail and rely on future sync if we had a proper queue.
+                             // Simple fix: if it's still temp, the AddTaskList background task might not have finished.
+                             // Let's just try to find the list by some other means if possible or just log it.
+                             Debug.WriteLine("Cannot add task to remote: task list still has temp ID");
+                             return; 
+                        }
+                    }
+
+                    var remote = await _remoteService.AddTaskAsync(actualListId, task);
                     task.Id = remote.Id;
-                } catch { }
+                } catch (Exception ex) {
+                    Debug.WriteLine($"Error adding task: {ex.Message}");
+                }
             });
 
             return task;
@@ -150,7 +170,9 @@ namespace Google_Tasks_Client.Services
                     else existing.Title = remote.Title;
                 }
                 _taskLists.RemoveAll(l => !remoteLists.Any(r => r.Id == l.Id) && !l.Id.StartsWith("temp_"));
-            } catch { }
+            } catch (Exception ex) {
+                Debug.WriteLine($"Error syncing task lists: {ex.Message}");
+            }
         }
 
         public async Task SyncTasksAsync(string taskListId)
@@ -176,7 +198,9 @@ namespace Google_Tasks_Client.Services
                 }
                 // Remove
                 localTasks.RemoveAll(t => !remoteTasks.Any(r => r.Id == t.Id) && !t.Id.StartsWith("temp_"));
-            } catch { }
+            } catch (Exception ex) {
+                Debug.WriteLine($"Error syncing tasks for {taskListId}: {ex.Message}");
+            }
         }
 
         public async Task SyncAllAsync()
@@ -185,6 +209,7 @@ namespace Google_Tasks_Client.Services
             var lists = _taskLists.ToList();
             foreach (var list in lists)
             {
+                if (list.Id.StartsWith("temp_")) continue;
                 await SyncTasksAsync(list.Id);
             }
         }

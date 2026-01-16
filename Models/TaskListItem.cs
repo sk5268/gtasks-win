@@ -6,9 +6,21 @@ namespace Google_Tasks_Client.Models
 {
     public class TaskListItem : INotifyPropertyChanged
     {
+        private string _id = string.Empty;
         private string _title = string.Empty;
 
-        public string Id { get; set; } = string.Empty;
+        public string Id 
+        { 
+            get => _id;
+            set
+            {
+                if (_id != value)
+                {
+                    _id = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         
         public string Title 
         { 

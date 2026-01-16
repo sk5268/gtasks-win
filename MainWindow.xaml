@@ -12,6 +12,10 @@
     Title="Google Tasks Client">
 
     <Grid x:Name="RootGrid">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="N" Modifiers="Control" Invoked="NewTaskAccelerator_Invoked"/>
+            <KeyboardAccelerator Key="N" Modifiers="Control,Shift" Invoked="NewTaskListAccelerator_Invoked"/>
+        </Grid.KeyboardAccelerators>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300" />
             <ColumnDefinition Width="*" />
@@ -33,8 +37,10 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Text="{x:Bind ViewModel.NewTaskListTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                         PlaceholderText="New list" />
+                <TextBox x:Name="NewTaskListTextBox"
+                         Text="{x:Bind ViewModel.NewTaskListTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         PlaceholderText="New list" 
+                         KeyDown="NewTaskListTextBox_KeyDown"/>
                 <Button Grid.Column="1" Content="+" Command="{x:Bind ViewModel.AddTaskListCommand}" Margin="4,0,0,0"/>
             </Grid>
             
@@ -81,8 +87,10 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                         PlaceholderText="Add a task" />
+                <TextBox x:Name="NewTaskTextBox"
+                         Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         PlaceholderText="Add a task" 
+                         KeyDown="NewTaskTextBox_KeyDown"/>
                 <Button Grid.Column="1" Content="Add" Command="{x:Bind ViewModel.AddTaskCommand}" Margin="8,0,0,0"/>
             </Grid>
 

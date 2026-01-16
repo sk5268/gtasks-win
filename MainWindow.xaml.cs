@@ -14,50 +14,59 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace Google_Tasks_Client
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
         public MainViewModel ViewModel { get; }
 
-                public MainWindow()
-
-                {
-
-                    this.InitializeComponent();
-
-                    ViewModel = new MainViewModel();
-
-                    RootGrid.DataContext = ViewModel;
-
-                    this.Closed += MainWindow_Closed;
-
-                }
-
-        
-
-                private async void MainWindow_Closed(object sender, WindowEventArgs args)
-
-                {
-
-                    // Note: In WinUI 3, this might be synchronous or fire after window is gone,
-
-                    // but we call our async shutdown. 
-
-                    // For a production app, we might use a deferral if available or a task wait.
-
-                    await ViewModel.ShutdownAsync();
-
-                }
-
-            }
-
+        public MainWindow()
+        {
+            this.InitializeComponent();
+            ViewModel = new MainViewModel();
+            RootGrid.DataContext = ViewModel;
+            this.Closed += MainWindow_Closed;
         }
 
-        
+        public void NewTaskAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            NewTaskTextBox.Focus(FocusState.Programmatic);
+            args.Handled = true;
+        }
+
+        public void NewTaskListAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            NewTaskListTextBox.Focus(FocusState.Programmatic);
+            args.Handled = true;
+        }
+
+        public void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                if (ViewModel.AddTaskCommand.CanExecute(null))
+                {
+                    ViewModel.AddTaskCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        public void NewTaskListTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                if (ViewModel.AddTaskListCommand.CanExecute(null))
+                {
+                    ViewModel.AddTaskListCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private async void MainWindow_Closed(object sender, WindowEventArgs args)
+        {
+            await ViewModel.ShutdownAsync();
+        }
+    }
+}

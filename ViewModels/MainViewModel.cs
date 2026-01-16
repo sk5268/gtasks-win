@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -107,30 +108,40 @@ namespace Google_Tasks_Client.ViewModels
 
         private async Task InitialLoadAsync()
         {
+            System.Diagnostics.Debug.WriteLine("InitialLoadAsync started");
             // 1. Load from DB (into Repository memory)
             await _taskService.InitializeAsync();
+            System.Diagnostics.Debug.WriteLine("Local data initialized");
             
             // 2. Refresh UI from local cache
             await LoadTaskListsUIAsync();
+            System.Diagnostics.Debug.WriteLine("UI refreshed from local cache");
 
             // 3. One-time boot sync from API (Everything)
-            await Task.Run(async () => {
-                await _taskService.SyncAllAsync();
-                
-                // 4. Update UI as soon as response arrives
-                _dispatcherQueue.TryEnqueue(async () => {
-                    await LoadTaskListsUIAsync();
-                    if (SelectedTaskList != null)
-                    {
-                        await LoadTasksUIAsync(SelectedTaskList.Id);
-                    }
-                });
+            _ = Task.Run(async () => {
+                System.Diagnostics.Debug.WriteLine("SyncAllAsync started in background");
+                try {
+                    await _taskService.SyncAllAsync();
+                    System.Diagnostics.Debug.WriteLine("SyncAllAsync completed");
+                    
+                    // 4. Update UI as soon as response arrives
+                    _dispatcherQueue.TryEnqueue(async () => {
+                        System.Diagnostics.Debug.WriteLine("Updating UI after sync");
+                        await LoadTaskListsUIAsync();
+                        if (SelectedTaskList != null)
+                        {
+                            await LoadTasksUIAsync(SelectedTaskList.Id);
+                        }
+                    });
+                } catch (Exception ex) {
+                    System.Diagnostics.Debug.WriteLine($"Error during InitialLoad sync: {ex.Message}");
+                }
             });
         }
 
         private async Task RefreshActiveListAsync()
         {
-            if (SelectedTaskList == null) return;
+            if (SelectedTaskList == null || SelectedTaskList.Id.StartsWith("temp_")) return;
             
             try
             {
@@ -246,6 +257,8 @@ namespace Google_Tasks_Client.ViewModels
         {
             // 1. Show cached tasks immediately
             await LoadTasksUIAsync(listId);
+
+            if (listId.StartsWith("temp_")) return;
 
             // 2. Fetch changes for THIS list in background
             _ = Task.Run(async () => {

@@ -23,27 +23,35 @@ namespace Google_Tasks_Client.Services
         {
             if (_service != null) return;
 
-            UserCredential credential;
-
-            // BEST PRACTICE: Load secrets from a file that is NOT committed to source control
-            using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
+            try
             {
-                // The token is stored in a local folder so the user stays logged in
+                UserCredential credential;
                 string credPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GoogleTasksClientToken");
+
+                var secrets = new ClientSecrets
+                {
+                    ClientId = Secrets.ClientId,
+                    ClientSecret = Secrets.ClientSecret
+                };
                 
                 credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.FromStream(stream).Secrets,
+                    secrets,
                     _scopes,
                     "user",
                     CancellationToken.None,
                     new FileDataStore(credPath, true));
-            }
 
-            _service = new TasksService(new BaseClientService.Initializer()
+                _service = new TasksService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = _appName,
+                });
+            }
+            catch (Exception ex)
             {
-                HttpClientInitializer = credential,
-                ApplicationName = _appName,
-            });
+                System.Diagnostics.Debug.WriteLine($"GoogleTaskService Initialization Error: {ex}");
+                throw;
+            }
         }
 
         public async Task<List<TaskListItem>> GetTaskListsAsync()

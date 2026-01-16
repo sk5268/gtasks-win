@@ -6,12 +6,24 @@ namespace Google_Tasks_Client.Models
 {
     public class TaskItem : INotifyPropertyChanged
     {
+        private string _id = string.Empty;
         private string _title = string.Empty;
         private string _notes = string.Empty;
         private string _status = "needsAction";
         private DateTime? _due;
 
-        public string Id { get; set; } = string.Empty;
+        public string Id 
+        { 
+            get => _id;
+            set
+            {
+                if (_id != value)
+                {
+                    _id = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         
         public string Title 
         { 

@@ -1,6 +1,6 @@
 # Google Tasks Secrets
 client_secrets.json
-
+Secrets.cs
 # User-specific files
 *.rsuser
 *.suo
