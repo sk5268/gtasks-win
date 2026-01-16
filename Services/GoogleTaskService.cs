@@ -116,7 +116,8 @@ namespace Google_Tasks_Client.Services
                     Title = item.Title ?? "",
                     Notes = item.Notes ?? "",
                     Status = item.Status ?? "needsAction",
-                    Due = due
+                    Due = due,
+                    ParentId = item.Parent ?? string.Empty
                 };
             }).ToList();
         }
@@ -129,7 +130,8 @@ namespace Google_Tasks_Client.Services
                 Title = task.Title,
                 Notes = task.Notes,
                 Status = task.Status,
-                Due = task.Due?.ToString("yyyy-MM-ddTHH:mm:ss.fffK")
+                Due = task.Due?.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
+                Parent = string.IsNullOrEmpty(task.ParentId) ? null : task.ParentId
             };
 
             var request = _service!.Tasks.Insert(googleTask, taskListId);
@@ -157,7 +159,8 @@ namespace Google_Tasks_Client.Services
                 Title = task.Title,
                 Notes = task.Notes,
                 Status = task.Status,
-                Due = task.Due?.ToString("yyyy-MM-ddTHH:mm:ss.fffK")
+                Due = task.Due?.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
+                Parent = string.IsNullOrEmpty(task.ParentId) ? null : task.ParentId
             };
 
             var request = _service!.Tasks.Update(googleTask, taskListId, task.Id);

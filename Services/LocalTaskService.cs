@@ -78,7 +78,8 @@ namespace Google_Tasks_Client.Services
                     Notes = task.Notes ?? "",
                     Status = task.Status ?? "needsAction",
                     Due = task.Due,
-                    TaskListId = taskListId
+                    TaskListId = taskListId,
+                    ParentId = task.ParentId ?? string.Empty
                 };
 
                 if (existingIds.Contains(task.Id))

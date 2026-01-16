@@ -23,8 +23,8 @@ namespace Google_Tasks_Client.Services
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<TaskItem>().HasKey(t => t.Id);
             modelBuilder.Entity<TaskListItem>().HasKey(t => t.Id);
-            modelBuilder.Entity<LocalTaskItem>().HasKey(t => t.Id);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -11,6 +12,8 @@ namespace Google_Tasks_Client.Models
         private string _notes = string.Empty;
         private string _status = "needsAction";
         private DateTime? _due;
+        private string _parentId = string.Empty;
+        private ObservableCollection<TaskItem> _subtasks = new();
 
         public string Id 
         { 
@@ -81,10 +84,36 @@ namespace Google_Tasks_Client.Models
             }
         }
         
-        public bool IsCompleted 
-        { 
+        public bool IsCompleted
+        {
             get => Status == "completed";
             set => Status = value ? "completed" : "needsAction";
+        }
+
+        public string ParentId
+        {
+            get => _parentId;
+            set
+            {
+                if (_parentId != value)
+                {
+                    _parentId = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ObservableCollection<TaskItem> Subtasks
+        {
+            get => _subtasks;
+            set
+            {
+                if (_subtasks != value)
+                {
+                    _subtasks = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

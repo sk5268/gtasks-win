@@ -95,52 +95,48 @@
                 <Button Grid.Column="1" Content="Add" Command="{x:Bind ViewModel.AddTaskCommand}" Margin="8,0,0,0"/>
             </Grid>
 
-            <ListView x:Name="TasksView" 
-                      ItemsSource="{x:Bind ViewModel.Tasks, Mode=OneWay}"
-                      Grid.Row="2"
-                      SelectionMode="None">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="12,0"/>
-                        <Setter Property="MinHeight" Value="0"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
+            <TreeView x:Name="TasksView"
+                      ItemsSource="{x:Bind ViewModel.RootTasks, Mode=OneWay}"
+                      Grid.Row="2">
+                <TreeView.ItemTemplate>
                     <DataTemplate x:DataType="models:TaskItem">
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                        <TreeViewItem ItemsSource="{x:Bind Subtasks, Mode=OneWay}" IsExpanded="True">
+                            <TreeViewItem.Content>
+                                <Grid Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                            <Grid VerticalAlignment="Top" Height="22" Margin="0,0,16,0">
-                                <CheckBox IsChecked="{x:Bind IsCompleted, Mode=TwoWay}" 
-                                          Command="{Binding DataContext.ToggleTaskStatusCommand, ElementName=RootGrid}"
-                                          CommandParameter="{x:Bind}"
-                                          Padding="0" MinWidth="0" MinHeight="0" Margin="0" VerticalAlignment="Center"/>
-                            </Grid>
+                                    <Grid VerticalAlignment="Top" Height="22" Margin="0,0,16,0">
+                                        <CheckBox IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
+                                                  Command="{Binding DataContext.ToggleTaskStatusCommand, ElementName=RootGrid}"
+                                                  CommandParameter="{x:Bind}"
+                                                  Padding="0" MinWidth="0" MinHeight="0" Margin="0" VerticalAlignment="Center"/>
+                                    </Grid>
 
-                            <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                                <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                                <TextBlock Text="{x:Bind Notes}" Style="{StaticResource CaptionTextBlockStyle}" 
-                                           Margin="0,-2,0,0"
-                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
-                                <TextBlock Text="{x:Bind FormattedDue}" Style="{StaticResource CaptionTextBlockStyle}" 
-                                           Margin="0,-10,0,0"
-                                           Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
-                            </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                                        <TextBlock Text="{x:Bind Title}" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                        <TextBlock Text="{x:Bind Notes}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Margin="0,-2,0,0"
+                                                   Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                                        <TextBlock Text="{x:Bind FormattedDue}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Margin="0,-10,0,0"
+                                                   Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                                    </StackPanel>
 
-                            <Button Grid.Column="2" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" 
-                                    Command="{Binding DataContext.DeleteTaskCommand, ElementName=RootGrid}"
-                                    CommandParameter="{x:Bind}"
-                                    Background="Transparent" BorderThickness="0"
-                                    VerticalAlignment="Top"/>
-                        </Grid>
+                                    <Button Grid.Column="2" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                            Command="{Binding DataContext.DeleteTaskCommand, ElementName=RootGrid}"
+                                            CommandParameter="{x:Bind}"
+                                            Background="Transparent" BorderThickness="0"
+                                            VerticalAlignment="Top"/>
+                                </Grid>
+                            </TreeViewItem.Content>
+                        </TreeViewItem>
                     </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                </TreeView.ItemTemplate>
+            </TreeView>
         </Grid>
     </Grid>
 </Window>

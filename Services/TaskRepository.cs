@@ -194,6 +194,7 @@ namespace Google_Tasks_Client.Services
                         existing.Notes = remote.Notes;
                         existing.Status = remote.Status;
                         existing.Due = remote.Due;
+                        existing.ParentId = remote.ParentId;
                     }
                 }
                 // Remove

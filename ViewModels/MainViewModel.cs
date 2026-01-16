@@ -25,7 +25,7 @@ namespace Google_Tasks_Client.ViewModels
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public ObservableCollection<TaskListItem> TaskLists { get; } = new();
-        public ObservableCollection<TaskItem> Tasks { get; } = new();
+        public ObservableCollection<TaskItem> RootTasks { get; } = new();
 
         public ICommand AddTaskCommand { get; }
         public ICommand DeleteTaskCommand { get; }
@@ -76,7 +76,7 @@ namespace Google_Tasks_Client.ViewModels
                     }
                     else
                     {
-                        Tasks.Clear();
+                        RootTasks.Clear();
                     }
                 }
             }
@@ -189,22 +189,23 @@ namespace Google_Tasks_Client.ViewModels
 
         private void SyncTasksCollection(List<TaskItem> newList)
         {
-            for (int i = Tasks.Count - 1; i >= 0; i--)
+            RootTasks.Clear();
+            var taskDict = newList.ToDictionary(t => t.Id);
+            var rootTasks = newList.Where(t => string.IsNullOrEmpty(t.ParentId)).OrderBy(t => t.Title).ToList();
+            foreach (var task in rootTasks)
             {
-                if (!newList.Any(t => t.Id == Tasks[i].Id)) Tasks.RemoveAt(i);
+                RootTasks.Add(task);
+                BuildSubtasks(task, newList);
             }
+        }
 
-            foreach (var item in newList)
+        private void BuildSubtasks(TaskItem parent, List<TaskItem> allTasks)
+        {
+            var subtasks = allTasks.Where(t => t.ParentId == parent.Id).OrderBy(t => t.Title).ToList();
+            foreach (var sub in subtasks)
             {
-                var existing = Tasks.FirstOrDefault(t => t.Id == item.Id);
-                if (existing == null) Tasks.Add(item);
-                else
-                {
-                    existing.Title = item.Title;
-                    existing.Notes = item.Notes;
-                    existing.Status = item.Status;
-                    existing.Due = item.Due;
-                }
+                parent.Subtasks.Add(sub);
+                BuildSubtasks(sub, allTasks);
             }
         }
 
@@ -238,9 +239,9 @@ namespace Google_Tasks_Client.ViewModels
 
             var (title, due) = ReminderParser.Parse(titleInput);
             var newTask = new TaskItem { Title = title, Due = due };
-            
+
             // UI already optimistic because we add it here
-            Tasks.Insert(0, newTask);
+            RootTasks.Insert(0, newTask);
             await _taskService.AddTaskAsync(SelectedTaskList.Id, newTask);
         }
 
@@ -248,7 +249,35 @@ namespace Google_Tasks_Client.ViewModels
         {
             if (task == null || SelectedTaskList == null) return;
             await _taskService.DeleteTaskAsync(SelectedTaskList.Id, task.Id);
-            Tasks.Remove(task);
+            RemoveTaskFromHierarchy(task);
+        }
+
+        private void RemoveTaskFromHierarchy(TaskItem task)
+        {
+            if (RootTasks.Contains(task))
+            {
+                RootTasks.Remove(task);
+            }
+            else
+            {
+                foreach (var root in RootTasks)
+                {
+                    RemoveFromSubtasks(root, task);
+                }
+            }
+        }
+
+        private void RemoveFromSubtasks(TaskItem parent, TaskItem task)
+        {
+            if (parent.Subtasks.Contains(task))
+            {
+                parent.Subtasks.Remove(task);
+                return;
+            }
+            foreach (var sub in parent.Subtasks)
+            {
+                RemoveFromSubtasks(sub, task);
+            }
         }
 
         private async Task ToggleTaskStatusAsync(TaskItem? task)
