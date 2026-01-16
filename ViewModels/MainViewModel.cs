@@ -166,9 +166,24 @@ namespace Google_Tasks_Client.ViewModels
                 else existing.Title = item.Title;
             }
 
+            SortTaskLists();
+
             if (SelectedTaskList == null && TaskLists.Count > 0)
             {
                 SelectedTaskList = TaskLists[0];
+            }
+        }
+
+        private void SortTaskLists()
+        {
+            var sorted = TaskLists.OrderBy(l => l.Title.StripEmojis(), StringComparer.OrdinalIgnoreCase).ToList();
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                var oldIndex = TaskLists.IndexOf(sorted[i]);
+                if (oldIndex != -1 && oldIndex != i)
+                {
+                    TaskLists.Move(oldIndex, i);
+                }
             }
         }
 
@@ -200,6 +215,7 @@ namespace Google_Tasks_Client.ViewModels
             NewTaskListTitle = string.Empty;
             var createdList = await _taskService.AddTaskListAsync(title);
             TaskLists.Add(createdList);
+            SortTaskLists();
             SelectedTaskList = createdList;
         }
 

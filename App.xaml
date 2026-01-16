@@ -11,6 +11,9 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+            <Style TargetType="ToolTip">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
